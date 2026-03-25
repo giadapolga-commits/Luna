@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#05060f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Luna">
+<link rel="manifest" href="./manifest.json">
+<title>Luna — La Tua Guida Lunare</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Cinzel:wght@400;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --night:#05060f;--deep:#0c0d1e;--indigo:#1a1b3a;--violet:#2e1f5e;
+  --gold:#c8a96e;--silver:#d4d8e8;--moonwhite:#faf8f2;
+  --rose:#c87e8a;--teal:#6eafc8;--sage:#8ab88a;--amber:#d4956a;
+}
+html{scroll-behavior:smooth}
+body{background:var(--night);color:var(--silver);font-family:'Cormorant Garamond',Georgia,serif;font-size:18px;line-height:1.7;min-height:100vh;overflow-x:hidden}
+.stars{position:fixed;inset:0;z-index:0;pointer-events:none}
+.stars canvas{width:100%;height:100%}
+
+/* NAV */
+.nav-tabs{position:sticky;top:0;z-index:100;display:flex;justify-content:center;background:rgba(5,6,15,0.93);backdrop-filter:blur(20px);border-bottom:1px solid rgba(200,169,110,0.15);padding:0 8px;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-tab{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.18em;text-transform:uppercase;color:rgba(212,216,232,0.4);padding:15px 14px;cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:color .3s,border-color .3s;white-space:nowrap;flex-shrink:0}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+.page{display:none}.page.active{display:block}
+.container{position:relative;z-index:1;max-width:760px;margin:0 auto;padding:36px 18px 80px}
+
+/* HEADER */
+header{text-align:center;margin-bottom:44px}
+.site-title{font-family:'Cinzel',serif;font-size:clamp(2rem,8vw,3.8rem);font-weight:400;letter-spacing:0.18em;color:var(--moonwhite);text-shadow:0 0 40px rgba(200,169,110,0.5),0 0 80px rgba(200,169,110,0.2);line-height:1}
+.site-sub{font-style:italic;font-size:0.9rem;letter-spacing:0.3em;color:var(--gold);margin-top:8px;text-transform:lowercase}
+
+/* MOON WIDGET */
+.moon-widget{background:linear-gradient(160deg,rgba(30,20,60,0.9),rgba(12,13,30,0.95));border:1px solid rgba(200,169,110,0.25);border-radius:22px;padding:32px 24px 28px;text-align:center;margin-bottom:32px;box-shadow:0 8px 64px rgba(0,0,0,0.6),inset 0 1px 0 rgba(200,169,110,0.15);animation:fadeUp .8s ease both}
+.moon-canvas-wrap{display:flex;justify-content:center;margin-bottom:18px}
+#moonCanvas{filter:drop-shadow(0 0 22px rgba(200,169,110,0.4)) drop-shadow(0 0 7px rgba(250,248,242,0.3))}
+.phase-name{font-family:'Cinzel',serif;font-size:1.5rem;font-weight:600;color:var(--moonwhite);letter-spacing:0.12em;margin-bottom:4px}
+.phase-date{font-size:0.78rem;letter-spacing:0.22em;color:var(--gold);text-transform:uppercase;margin-bottom:16px}
+.phase-stats{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:20px}
+.stat{text-align:center}
+.stat-val{font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);display:block}
+.stat-lbl{font-size:0.68rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--silver);opacity:0.55}
+.cycle-bar-wrap{margin:0 auto 6px;max-width:320px}
+.cycle-bar-label{display:flex;justify-content:space-between;font-size:0.68rem;letter-spacing:0.1em;text-transform:uppercase;color:rgba(212,216,232,0.35);margin-bottom:5px}
+.cycle-bar{height:3px;background:rgba(200,169,110,0.12);border-radius:2px;overflow:hidden}
+.cycle-fill{height:100%;background:linear-gradient(90deg,var(--violet),var(--gold));border-radius:2px}
+.next-phases{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:16px;padding-top:16px;border-top:1px solid rgba(200,169,110,0.1)}
+.next-phase{text-align:center;padding:7px 10px;background:rgba(200,169,110,0.06);border-radius:10px;border:1px solid rgba(200,169,110,0.1);min-width:82px}
+.np-symbol{font-size:1.3rem;line-height:1}
+.np-name{font-size:0.6rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);margin:3px 0 2px}
+.np-date{font-size:0.75rem;color:var(--silver);opacity:.8}
+
+/* SECTIONS */
+.sections{display:flex;flex-direction:column;gap:16px}
+.section-card{background:linear-gradient(140deg,rgba(22,18,44,0.85),rgba(10,11,22,0.9));border:1px solid rgba(200,169,110,0.15);border-radius:16px;overflow:hidden;cursor:pointer;transition:border-color .3s;animation:fadeUp .7s ease both}
+.section-card:nth-child(1){animation-delay:.1s}.section-card:nth-child(2){animation-delay:.2s}.section-card:nth-child(3){animation-delay:.3s}.section-card:nth-child(4){animation-delay:.4s}.section-card:nth-child(5){animation-delay:.5s}
+.section-card.open{border-color:rgba(200,169,110,0.28)}
+.section-header{display:flex;align-items:center;gap:12px;padding:18px 20px}
+.section-icon{font-size:1.5rem;width:36px;text-align:center;flex-shrink:0}
+.section-title{font-family:'Cinzel',serif;font-size:0.85rem;letter-spacing:0.1em;color:var(--moonwhite);flex:1}
+.section-chevron{color:var(--gold);font-size:0.85rem;transition:transform .3s;opacity:.7}
+.section-card.open .section-chevron{transform:rotate(180deg)}
+.section-body{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1)}
+.section-card.open .section-body{max-height:1200px}
+.section-content{padding:0 20px 22px;border-top:1px solid rgba(200,169,110,0.1);padding-top:16px;font-size:0.9rem;line-height:1.85;color:rgba(212,216,232,.88)}
+.section-content em{color:var(--gold);font-style:normal}
+.section-content p+p{margin-top:11px}
+.energy-meter{display:flex;align-items:center;gap:10px;margin-top:12px;padding:9px 12px;background:rgba(200,169,110,0.05);border-radius:8px;border:1px solid rgba(200,169,110,0.1)}
+.energy-label{font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--gold);width:64px;flex-shrink:0}
+.energy-dots{display:flex;gap:4px}
+.edot{width:7px;height:7px;border-radius:50%;border:1px solid rgba(200,169,110,0.3)}
+.edot.on{background:var(--gold);box-shadow:0 0 5px rgba(200,169,110,0.6)}
+
+/* ── ASTROLOGIA ── */
+.astro-hero{background:linear-gradient(160deg,rgba(20,10,50,0.95),rgba(10,11,22,0.98));border:1px solid rgba(110,175,200,0.2);border-radius:22px;padding:28px 22px;margin-bottom:24px;text-align:center;animation:fadeUp .6s ease both}
+.astro-sign-big{font-size:4rem;margin-bottom:8px}
+.astro-sign-name{font-family:'Cinzel',serif;font-size:1.5rem;letter-spacing:0.15em;color:var(--moonwhite);margin-bottom:4px}
+.astro-sign-sub{font-size:0.8rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--teal);margin-bottom:16px}
+.astro-desc{font-size:0.92rem;line-height:1.8;color:rgba(212,216,232,.85);font-style:italic}
+
+.astro-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:24px}
+@media(max-width:480px){.astro-grid{grid-template-columns:1fr}}
+.astro-card{background:rgba(12,13,30,0.85);border:1px solid rgba(110,175,200,0.15);border-radius:16px;padding:18px 16px;animation:fadeUp .7s ease both}
+.astro-card-icon{font-size:1.6rem;margin-bottom:8px}
+.astro-card-title{font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);margin-bottom:8px}
+.astro-card-body{font-size:0.88rem;line-height:1.75;color:rgba(212,216,232,.82)}
+.astro-card-body em{color:var(--gold);font-style:normal}
+
+.astro-phase-wheel{background:rgba(12,13,30,0.85);border:1px solid rgba(200,169,110,0.15);border-radius:18px;padding:22px;margin-bottom:24px}
+.apw-title{font-family:'Cinzel',serif;font-size:0.8rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.apw-list{display:flex;flex-direction:column;gap:10px}
+.apw-item{display:flex;gap:12px;align-items:flex-start;padding:10px 12px;background:rgba(200,169,110,0.04);border-radius:10px;border:1px solid rgba(200,169,110,0.08)}
+.apw-item.current{background:rgba(200,169,110,0.1);border-color:rgba(200,169,110,0.25)}
+.apw-sym{font-size:1.3rem;flex-shrink:0;line-height:1.4}
+.apw-info{}
+.apw-name{font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.1em;color:var(--moonwhite)}
+.apw-name.current-label::after{content:' ← ora';color:var(--gold);font-size:0.7rem}
+.apw-body{font-size:0.82rem;color:rgba(212,216,232,.7);margin-top:2px;line-height:1.6}
+
+/* NOTIFICHE */
+.notif-page .container{}
+.notif-hero{text-align:center;margin-bottom:32px}
+.notif-title{font-family:'Cinzel',serif;font-size:1.6rem;letter-spacing:0.15em;color:var(--moonwhite);margin-bottom:6px}
+.notif-sub{font-style:italic;font-size:0.88rem;color:rgba(212,216,232,.5)}
+
+.notif-status-card{background:linear-gradient(140deg,rgba(22,18,44,0.9),rgba(10,11,22,0.95));border:1px solid rgba(200,169,110,0.2);border-radius:18px;padding:22px;margin-bottom:22px;text-align:center}
+.notif-status-icon{font-size:2.5rem;margin-bottom:8px}
+.notif-status-text{font-family:'Cinzel',serif;font-size:0.9rem;letter-spacing:0.1em;color:var(--moonwhite);margin-bottom:4px}
+.notif-status-sub{font-size:0.82rem;color:rgba(212,216,232,.55)}
+
+.notif-enable-btn{width:100%;padding:14px;background:linear-gradient(135deg,rgba(46,31,94,0.8),rgba(200,169,110,0.35));border:1px solid rgba(200,169,110,0.45);border-radius:12px;font-family:'Cinzel',serif;font-size:0.82rem;letter-spacing:0.2em;text-transform:uppercase;color:var(--moonwhite);cursor:pointer;transition:all .3s;margin-bottom:20px}
+.notif-enable-btn:hover{box-shadow:0 4px 20px rgba(200,169,110,0.25);background:linear-gradient(135deg,rgba(46,31,94,1),rgba(200,169,110,0.5))}
+.notif-enable-btn:disabled{opacity:.4;cursor:not-allowed}
+
+.notif-settings{display:flex;flex-direction:column;gap:14px;margin-bottom:24px}
+.notif-setting{display:flex;align-items:center;justify-content:space-between;background:rgba(12,13,30,0.8);border:1px solid rgba(200,169,110,0.12);border-radius:14px;padding:16px 18px;gap:12px}
+.ns-info{}
+.ns-title{font-family:'Cinzel',serif;font-size:0.82rem;letter-spacing:0.08em;color:var(--moonwhite);margin-bottom:2px}
+.ns-desc{font-size:0.78rem;color:rgba(212,216,232,.5)}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:rgba(200,169,110,0.15);border:1px solid rgba(200,169,110,0.25);border-radius:12px;cursor:pointer;transition:.3s}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:rgba(212,216,232,.4);border-radius:50%;transition:.3s}
+.toggle input:checked+.toggle-slider{background:rgba(200,169,110,0.3);border-color:var(--gold)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:var(--gold);box-shadow:0 0 6px rgba(200,169,110,0.6)}
+
+.notif-time-row{display:flex;align-items:center;gap:12px;background:rgba(12,13,30,0.8);border:1px solid rgba(200,169,110,0.12);border-radius:14px;padding:16px 18px}
+.ntl{font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--gold);flex:1}
+.time-input{background:rgba(5,6,15,0.7);border:1px solid rgba(200,169,110,0.25);border-radius:8px;color:var(--moonwhite);font-family:'Cinzel',serif;font-size:1rem;padding:6px 10px;outline:none;width:100px;text-align:center}
+.time-input::-webkit-calendar-picker-indicator{filter:invert(0.7) sepia(1) saturate(2) hue-rotate(5deg)}
+
+.test-notif-btn{width:100%;padding:12px;background:rgba(110,175,200,0.08);border:1px solid rgba(110,175,200,0.25);border-radius:12px;font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--teal);cursor:pointer;transition:all .3s;margin-top:8px}
+.test-notif-btn:hover{background:rgba(110,175,200,0.15)}
+
+.notif-info-box{background:rgba(138,184,138,0.06);border:1px solid rgba(138,184,138,0.2);border-radius:14px;padding:16px 18px;font-size:0.83rem;line-height:1.7;color:rgba(212,216,232,.7)}
+.notif-info-box strong{color:var(--sage)}
+
+/* DIARIO */
+.diary-header{text-align:center;margin-bottom:32px}
+.diary-title{font-family:'Cinzel',serif;font-size:1.6rem;letter-spacing:0.15em;color:var(--moonwhite);margin-bottom:6px}
+.diary-sub{font-style:italic;font-size:0.88rem;color:rgba(212,216,232,.5)}
+.entry-form{background:linear-gradient(150deg,rgba(30,20,60,0.88),rgba(12,13,30,0.92));border:1px solid rgba(200,169,110,0.2);border-radius:18px;padding:24px 20px;margin-bottom:28px;animation:fadeUp .6s ease both}
+.form-row{margin-bottom:18px}
+.form-label{display:block;font-size:0.72rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold);margin-bottom:9px}
+.mood-grid{display:flex;flex-wrap:wrap;gap:7px}
+.mood-pill{padding:5px 13px;border-radius:18px;font-size:0.8rem;border:1px solid rgba(200,169,110,0.2);background:rgba(200,169,110,0.05);color:rgba(212,216,232,.7);cursor:pointer;transition:all .2s;font-family:'Cormorant Garamond',serif}
+.mood-pill.selected{background:rgba(200,169,110,0.18);border-color:var(--gold);color:var(--moonwhite)}
+.energy-slider-wrap{display:flex;align-items:center;gap:10px}
+.energy-slider{-webkit-appearance:none;appearance:none;width:100%;height:4px;border-radius:2px;outline:none;background:linear-gradient(90deg,var(--violet) 0%,var(--gold) 100%)}
+.energy-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--gold);cursor:pointer;box-shadow:0 0 8px rgba(200,169,110,0.6)}
+textarea.diary-text{width:100%;min-height:100px;padding:12px 14px;background:rgba(5,6,15,0.6);border:1px solid rgba(200,169,110,0.2);border-radius:10px;color:var(--silver);font-family:'Cormorant Garamond',serif;font-size:0.95rem;line-height:1.7;resize:vertical;outline:none;transition:border-color .2s}
+textarea.diary-text:focus{border-color:rgba(200,169,110,0.5)}
+textarea.diary-text::placeholder{color:rgba(212,216,232,.3);font-style:italic}
+.symptoms-grid{display:flex;flex-wrap:wrap;gap:7px}
+.sym-pill{padding:4px 11px;border-radius:18px;font-size:0.76rem;border:1px solid rgba(200,169,110,0.15);background:transparent;color:rgba(212,216,232,.5);cursor:pointer;transition:all .2s;font-family:'Cormorant Garamond',serif}
+.sym-pill.selected{background:rgba(200,100,138,0.15);border-color:var(--rose);color:var(--rose)}
+.save-btn{width:100%;padding:13px;margin-top:6px;background:linear-gradient(135deg,rgba(46,31,94,0.8),rgba(200,169,110,0.3));border:1px solid rgba(200,169,110,0.4);border-radius:11px;font-family:'Cinzel',serif;font-size:0.82rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--moonwhite);cursor:pointer;transition:all .3s}
+.save-btn:hover{box-shadow:0 4px 20px rgba(200,169,110,0.2)}
+.entries-section-title{font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;color:rgba(200,169,110,.6);margin-bottom:14px;padding-left:2px}
+.entries-list{display:flex;flex-direction:column;gap:12px}
+.entry-card{background:rgba(12,13,30,.8);border:1px solid rgba(200,169,110,.12);border-radius:14px;padding:16px 18px;transition:border-color .2s}
+.entry-card:hover{border-color:rgba(200,169,110,.25)}
+.entry-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:9px;gap:10px}
+.entry-left{display:flex;align-items:center;gap:9px}
+.entry-moon{font-size:1.3rem}
+.entry-date-line{font-family:'Cinzel',serif;font-size:0.75rem;letter-spacing:0.1em;color:var(--gold)}
+.entry-phase-line{font-size:0.76rem;color:rgba(212,216,232,.5)}
+.entry-delete{background:none;border:none;color:rgba(212,216,232,.2);font-size:.95rem;cursor:pointer;padding:2px 5px;border-radius:5px;transition:color .2s;flex-shrink:0}
+.entry-delete:hover{color:rgba(200,100,138,.7)}
+.entry-mood-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:7px}
+.entry-mood-tag{padding:2px 9px;border-radius:10px;font-size:0.72rem;background:rgba(200,169,110,.1);border:1px solid rgba(200,169,110,.2);color:var(--gold)}
+.entry-sym-tag{padding:2px 9px;border-radius:10px;font-size:0.72rem;background:rgba(200,100,138,.08);border:1px solid rgba(200,100,138,.2);color:var(--rose)}
+.entry-energy-row{display:flex;gap:4px;margin-bottom:9px}
+.entry-edot{width:7px;height:7px;border-radius:50%;border:1px solid rgba(200,169,110,.25)}
+.entry-edot.on{background:var(--gold)}
+.entry-text{font-size:0.88rem;line-height:1.75;color:rgba(212,216,232,.8);font-style:italic}
+.empty-diary{text-align:center;padding:44px 20px;color:rgba(212,216,232,.3);font-style:italic}
+.empty-icon{font-size:2.8rem;margin-bottom:10px;opacity:.35}
+.pattern-card{background:linear-gradient(140deg,rgba(20,15,40,.85),rgba(10,11,22,.9));border:1px solid rgba(110,175,200,.2);border-radius:16px;padding:20px;margin-bottom:24px}
+.pattern-title{font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.15em;text-transform:uppercase;color:var(--teal);margin-bottom:12px}
+.pattern-phases{display:flex;gap:7px;flex-wrap:wrap}
+.pp{text-align:center;padding:9px 7px;background:rgba(110,175,200,.05);border:1px solid rgba(110,175,200,.1);border-radius:9px;flex:1;min-width:60px}
+.pp-sym{font-size:1.1rem}
+.pp-avg{font-family:'Cinzel',serif;font-size:.85rem;color:var(--teal);margin:2px 0}
+.pp-lbl{font-size:.58rem;letter-spacing:.08em;text-transform:uppercase;color:rgba(212,216,232,.35)}
+
+footer{text-align:center;margin-top:50px;font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:rgba(212,216,232,.22)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:rgba(30,20,60,.96);border:1px solid rgba(200,169,110,.4);border-radius:11px;padding:11px 22px;font-size:.83rem;color:var(--moonwhite);z-index:999;transition:transform .4s cubic-bezier(.34,1.56,.64,1);pointer-events:none;letter-spacing:.05em;white-space:nowrap}
+.toast.show{transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+<div class="stars"><canvas id="starCanvas"></canvas></div>
+
+<nav class="nav-tabs">
+  <button class="nav-tab active" data-page="luna">☽ Luna</button>
+  <button class="nav-tab" data-page="astro">♑ Astrologia</button>
+  <button class="nav-tab" data-page="diario">✦ Diario</button>
+  <button class="nav-tab" data-page="notifiche">🔔 Notifiche</button>
+</nav>
+
+<!-- ═══════════════ LUNA ═══════════════ -->
+<div class="page active" id="page-luna">
+<div class="container">
+  <header><div class="site-title">☽ LUNA ☾</div><div class="site-sub">la tua guida alla luna</div></header>
+  <div class="moon-widget">
+    <div class="moon-canvas-wrap"><canvas id="moonCanvas" width="144" height="144"></canvas></div>
+    <div class="phase-name" id="phaseName">—</div>
+    <div class="phase-date" id="phaseDate">—</div>
+    <div class="phase-stats">
+      <div class="stat"><span class="stat-val" id="illumination">—</span><span class="stat-lbl">Illuminazione</span></div>
+      <div class="stat"><span class="stat-val" id="daysInCycle">—</span><span class="stat-lbl">Giorno ciclo</span></div>
+      <div class="stat"><span class="stat-val" id="daysToNext">—</span><span class="stat-lbl">Prossima fase</span></div>
+    </div>
+    <div class="cycle-bar-wrap">
+      <div class="cycle-bar-label"><span>🌑 Nuova</span><span>🌕 Piena</span><span>🌑 Nuova</span></div>
+      <div class="cycle-bar"><div class="cycle-fill" id="cycleFill" style="width:0%"></div></div>
+    </div>
+    <div class="next-phases" id="nextPhases"></div>
+  </div>
+  <div class="sections" id="sections"></div>
+  <footer>aggiornata ad ogni visita · basata sulla data del dispositivo</footer>
+</div>
+</div>
+
+<!-- ═══════════════ ASTROLOGIA ═══════════════ -->
+<div class="page" id="page-astro">
+<div class="container">
+  <header><div class="site-title" style="font-size:clamp(1.6rem,6vw,3rem)">♑ Astrologia</div><div class="site-sub">luna, segni & correlazioni celesti</div></header>
+  <div id="astroContent"></div>
+  <footer>interpretazioni tradizionali a scopo riflessivo</footer>
+</div>
+</div>
+
+<!-- ═══════════════ DIARIO ═══════════════ -->
+<div class="page" id="page-diario">
+<div class="container">
+  <div class="diary-header"><div class="diary-title">Diario Lunare</div><div class="diary-sub">traccia come ti senti ad ogni fase della luna</div></div>
+  <div class="entry-form">
+    <div class="form-row"><label class="form-label">Come ti senti oggi?</label>
+      <div class="mood-grid" id="moodGrid">
+        <button class="mood-pill" data-mood="serena">🌿 serena</button>
+        <button class="mood-pill" data-mood="energica">⚡ energica</button>
+        <button class="mood-pill" data-mood="creativa">✨ creativa</button>
+        <button class="mood-pill" data-mood="intuitiva">🔮 intuitiva</button>
+        <button class="mood-pill" data-mood="stanca">🌙 stanca</button>
+        <button class="mood-pill" data-mood="emotiva">💧 emotiva</button>
+        <button class="mood-pill" data-mood="irritabile">🌪 irritabile</button>
+        <button class="mood-pill" data-mood="malinconica">🌫 malinconica</button>
+        <button class="mood-pill" data-mood="ansiosa">🫁 ansiosa</button>
+        <button class="mood-pill" data-mood="grata">🌸 grata</button>
+        <button class="mood-pill" data-mood="concentrata">🎯 concentrata</button>
+        <button class="mood-pill" data-mood="sensuale">🌹 sensuale</button>
+      </div>
+    </div>
+    <div class="form-row"><label class="form-label">Livello di energia &nbsp;<span id="energyDisplay" style="color:var(--gold);font-family:'Cinzel',serif">5</span>/10</label>
+      <div class="energy-slider-wrap"><span>🌑</span><input type="range" class="energy-slider" id="energySlider" min="1" max="10" value="5"><span>☀️</span></div>
+    </div>
+    <div class="form-row"><label class="form-label">Sintomi fisici (opzionale)</label>
+      <div class="symptoms-grid">
+        <button class="sym-pill" data-sym="flusso">🩸 flusso</button>
+        <button class="sym-pill" data-sym="crampi">crampi</button>
+        <button class="sym-pill" data-sym="gonfiore">gonfiore</button>
+        <button class="sym-pill" data-sym="mal di testa">mal di testa</button>
+        <button class="sym-pill" data-sym="insonnia">insonnia</button>
+        <button class="sym-pill" data-sym="voglie cibo">voglie cibo</button>
+        <button class="sym-pill" data-sym="ipersensibilità">ipersensibilità</button>
+        <button class="sym-pill" data-sym="ovulazione">💫 ovulazione</button>
+        <button class="sym-pill" data-sym="libido alta">libido alta</button>
+        <button class="sym-pill" data-sym="pelle luminosa">pelle luminosa</button>
+        <button class="sym-pill" data-sym="acne">acne</button>
+        <button class="sym-pill" data-sym="sonno profondo">sonno profondo</button>
+      </div>
+    </div>
+    <div class="form-row"><label class="form-label">Note libere</label>
+      <textarea class="diary-text" id="diaryNote" placeholder="Cosa noti oggi? Sogni, pensieri, sensazioni nel corpo..."></textarea>
+    </div>
+    <button class="save-btn" id="saveBtn">✦ Salva nel diario lunare</button>
+  </div>
+  <div id="patternSection" style="display:none">
+    <div class="pattern-card"><div class="pattern-title">✦ La tua energia media per fase</div><div class="pattern-phases" id="patternPhases"></div></div>
+  </div>
+  <div class="entries-section-title" id="entriesTitle" style="display:none">Voci precedenti</div>
+  <div class="entries-list" id="entriesList"></div>
+  <div class="empty-diary" id="emptyDiary"><div class="empty-icon">🌑</div><div>Il tuo diario è ancora vuoto.<br>Inizia oggi a tracciare il tuo ritmo lunare.</div></div>
+  <footer>salvato solo su questo dispositivo · nessun dato condiviso</footer>
+</div>
+</div>
+
+<!-- ═══════════════ NOTIFICHE ═══════════════ -->
+<div class="page notif-page" id="page-notifiche">
+<div class="container">
+  <div class="notif-hero"><div class="notif-title">🔔 Notifiche Lunari</div><div class="notif-sub">ricevi un promemoria ad ogni cambio di fase</div></div>
+
+  <div class="notif-status-card" id="notifStatusCard">
+    <div class="notif-status-icon" id="notifStatusIcon">🔕</div>
+    <div class="notif-status-text" id="notifStatusText">Notifiche non attivate</div>
+    <div class="notif-status-sub" id="notifStatusSub">Attivale per ricevere promemoria lunari</div>
+  </div>
+
+  <button class="notif-enable-btn" id="notifEnableBtn">✦ Attiva le notifiche lunari</button>
+
+  <div class="notif-settings">
+    <div class="notif-setting">
+      <div class="ns-info"><div class="ns-title">Cambio di fase</div><div class="ns-desc">Quando la luna entra in una nuova fase</div></div>
+      <label class="toggle"><input type="checkbox" id="tog-phase" checked><span class="toggle-slider"></span></label>
+    </div>
+    <div class="notif-setting">
+      <div class="ns-info"><div class="ns-title">Promemoria mattutino</div><div class="ns-desc">La fase del giorno ogni mattina</div></div>
+      <label class="toggle"><input type="checkbox" id="tog-daily"><span class="toggle-slider"></span></label>
+    </div>
+    <div class="notif-setting">
+      <div class="ns-info"><div class="ns-title">Luna Piena</div><div class="ns-desc">Avviso speciale la notte della luna piena</div></div>
+      <label class="toggle"><input type="checkbox" id="tog-full" checked><span class="toggle-slider"></span></label>
+    </div>
+    <div class="notif-setting">
+      <div class="ns-info"><div class="ns-title">Luna Nuova</div><div class="ns-desc">Promemoria per seminare intenzioni</div></div>
+      <label class="toggle"><input type="checkbox" id="tog-new" checked><span class="toggle-slider"></span></label>
+    </div>
+  </div>
+
+  <div class="notif-time-row">
+    <span class="ntl">Orario promemoria mattutino</span>
+    <input type="time" class="time-input" id="notifTime" value="08:00">
+  </div>
+
+  <button class="test-notif-btn" id="testNotifBtn" style="margin-top:14px">☽ Invia notifica di prova</button>
+
+  <div class="notif-info-box" style="margin-top:20px">
+    <strong>Come funzionano:</strong> Le notifiche vengono inviate direttamente dal tuo browser/dispositivo — nessun server, nessun account. Devi aver aggiunto Luna alla Home come app (vedi istruzioni sotto) e aver dato il permesso alle notifiche.<br><br>
+    <strong>Su iPhone:</strong> Aggiungi Luna alla Home da Safari → Condividi → "Aggiungi alla schermata Home". Le notifiche su iOS richiedono iOS 16.4+ e l'app installata sulla Home.<br><br>
+    <strong>Su Android:</strong> Apri Luna in Chrome → menu ⋮ → "Aggiungi alla schermata Home" o "Installa app". Le notifiche funzionano subito dopo aver dato il permesso.
+  </div>
+  <footer>nessun dato viene inviato a server esterni</footer>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════
+// STARFIELD
+// ══════════════════════════════════════════
+(function(){
+  const c=document.getElementById('starCanvas'),ctx=c.getContext('2d');let s=[];
+  function resize(){c.width=window.innerWidth;c.height=window.innerHeight;init();}
+  function init(){s=[];for(let i=0;i<180;i++)s.push({x:Math.random()*c.width,y:Math.random()*c.height,r:Math.random()*1.1+.2,a:Math.random(),da:(Math.random()-.5)*.005});}
+  function draw(){ctx.clearRect(0,0,c.width,c.height);s.forEach(p=>{p.a=Math.max(.05,Math.min(1,p.a+p.da));if(p.a<=.05||p.a>=1)p.da*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(220,225,255,${p.a})`;ctx.fill();});requestAnimationFrame(draw);}
+  window.addEventListener('resize',resize);resize();draw();
+})();
+
+// ══════════════════════════════════════════
+// NAV
+// ══════════════════════════════════════════
+document.querySelectorAll('.nav-tab').forEach(tab=>{
+  tab.addEventListener('click',()=>{
+    document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('page-'+tab.dataset.page).classList.add('active');
+  });
+});
+
+// ══════════════════════════════════════════
+// LUNAR MATH
+// ══════════════════════════════════════════
+function getLunarAge(d){const k=new Date(Date.UTC(2000,0,6,18,14)),syn=29.53058867,diff=(d-k)/864e5;return((diff%syn)+syn)%syn;}
+function getIllum(age){return((1-Math.cos((age/29.53058867)*2*Math.PI))/2*100).toFixed(0);}
+function getPhase(age){
+  const s=29.53058867;
+  if(age<1.85||age>=s-1.85)return{name:'Luna Nuova',symbol:'🌑',key:'new'};
+  if(age<7.38)return{name:'Luna Crescente',symbol:'🌒',key:'waxing_crescent'};
+  if(age<9.22)return{name:'Quarto Crescente',symbol:'🌓',key:'first_quarter'};
+  if(age<14.77)return{name:'Gibbosa Crescente',symbol:'🌔',key:'waxing_gibbous'};
+  if(age<16.61)return{name:'Luna Piena',symbol:'🌕',key:'full'};
+  if(age<22.15)return{name:'Gibbosa Calante',symbol:'🌖',key:'waning_gibbous'};
+  if(age<23.99)return{name:'Quarto Calante',symbol:'🌗',key:'last_quarter'};
+  return{name:'Luna Calante',symbol:'🌘',key:'waning_crescent'};
+}
+function getNextPhases(age,from){
+  const s=29.53058867,tr=[{at:0,name:'Luna Nuova',symbol:'🌑'},{at:7.38,name:'Quarto Crescente',symbol:'🌓'},{at:14.77,name:'Luna Piena',symbol:'🌕'},{at:22.15,name:'Quarto Calante',symbol:'🌗'}];
+  let up=tr.map(t=>{let d=t.at-age;if(d<=0)d+=s;return{...t,days:d}});up.sort((a,b)=>a.days-b.days);
+  return up.slice(0,4).map(u=>({...u,date:new Date(from.getTime()+u.days*864e5).toLocaleDateString('it-IT',{day:'numeric',month:'short'})}));
+}
+
+// ══════════════════════════════════════════
+// GET SUN SIGN (tropical zodiac from date)
+// ══════════════════════════════════════════
+function getSunSign(date){
+  const m=date.getMonth()+1,d=date.getDate();
+  if((m==3&&d>=21)||(m==4&&d<=19))return{sign:'Ariete',sym:'♈',el:'Fuoco',ruler:'Marte',qual:'Cardinale'};
+  if((m==4&&d>=20)||(m==5&&d<=20))return{sign:'Toro',sym:'♉',el:'Terra',ruler:'Venere',qual:'Fisso'};
+  if((m==5&&d>=21)||(m==6&&d<=20))return{sign:'Gemelli',sym:'♊',el:'Aria',ruler:'Mercurio',qual:'Mutabile'};
+  if((m==6&&d>=21)||(m==7&&d<=22))return{sign:'Cancro',sym:'♋',el:'Acqua',ruler:'Luna',qual:'Cardinale'};
+  if((m==7&&d>=23)||(m==8&&d<=22))return{sign:'Leone',sym:'♌',el:'Fuoco',ruler:'Sole',qual:'Fisso'};
+  if((m==8&&d>=23)||(m==9&&d<=22))return{sign:'Vergine',sym:'♍',el:'Terra',ruler:'Mercurio',qual:'Mutabile'};
+  if((m==9&&d>=23)||(m==10&&d<=22))return{sign:'Bilancia',sym:'♎',el:'Aria',ruler:'Venere',qual:'Cardinale'};
+  if((m==10&&d>=23)||(m==11&&d<=21))return{sign:'Scorpione',sym:'♏',el:'Acqua',ruler:'Plutone/Marte',qual:'Fisso'};
+  if((m==11&&d>=22)||(m==12&&d<=21))return{sign:'Sagittario',sym:'♐',el:'Fuoco',ruler:'Giove',qual:'Mutabile'};
+  if((m==12&&d>=22)||(m==1&&d<=19))return{sign:'Capricorno',sym:'♑',el:'Terra',ruler:'Saturno',qual:'Cardinale'};
+  if((m==1&&d>=20)||(m==2&&d<=18))return{sign:'Acquario',sym:'♒',el:'Aria',ruler:'Urano/Saturno',qual:'Fisso'};
+  return{sign:'Pesci',sym:'♓',el:'Acqua',ruler:'Nettuno/Giove',qual:'Mutabile'};
+}
+
+// Moon sign (approximate — changes every 2.5 days)
+function getMoonSign(lunarAge){
+  const signs=['Ariete','Toro','Gemelli','Cancro','Leone','Vergine','Bilancia','Scorpione','Sagittario','Capricorno','Acquario','Pesci'];
+  const syms=['♈','♉','♊','♋','♌','♍','♎','♏','♐','♑','♒','♓'];
+  const idx=Math.floor((lunarAge/29.53058867)*12)%12;
+  return{sign:signs[idx],sym:syms[idx]};
+}
+
+// ══════════════════════════════════════════
+// DRAW MOON
+// ══════════════════════════════════════════
+function drawMoon(age){
+  const cv=document.getElementById('moonCanvas'),ctx=cv.getContext('2d'),W=cv.width,H=cv.height,cx=W/2,cy=H/2,r=55;
+  ctx.clearRect(0,0,W,H);
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fillStyle='#1a1a2e';ctx.fill();
+  if(!(age<1.85||age>=29.53-1.85)){
+    if(age>=13.77&&age<15.61){
+      ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);
+      const g=ctx.createRadialGradient(cx-7,cy-7,0,cx,cy,r);
+      g.addColorStop(0,'#faf8f2');g.addColorStop(.7,'#e8e0c8');g.addColorStop(1,'#c8b880');
+      ctx.fillStyle=g;ctx.fill();
+      [[cx-11,cy-14,4.5],[cx+17,cy+8,3],[cx-18,cy+13,2.5],[cx+5,cy-20,2.5]].forEach(([x,y,rs])=>{ctx.beginPath();ctx.arc(x,y,rs,0,Math.PI*2);ctx.fillStyle='rgba(0,0,0,0.07)';ctx.fill();});
+    } else {
+      const isW=age<14.77,xF=Math.cos((age/29.53058867)*2*Math.PI);
+      ctx.save();ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.clip();
+      ctx.beginPath();
+      if(isW){ctx.arc(cx,cy,r,-Math.PI/2,Math.PI/2);ctx.ellipse(cx,cy,Math.abs(xF)*r,r,0,Math.PI/2,-Math.PI/2,true);}
+      else{ctx.arc(cx,cy,r,Math.PI/2,-Math.PI/2);ctx.ellipse(cx,cy,Math.abs(xF)*r,r,0,-Math.PI/2,Math.PI/2,true);}
+      ctx.closePath();
+      const mg=ctx.createRadialGradient(cx-7,cy-7,0,cx,cy,r);
+      mg.addColorStop(0,'#faf8f2');mg.addColorStop(.7,'#e8e0c8');mg.addColorStop(1,'#c8b880');
+      ctx.fillStyle=mg;ctx.fill();ctx.restore();
+    }
+  }
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='rgba(200,169,110,0.28)';ctx.lineWidth=1;ctx.stroke();
+}
+
+// ══════════════════════════════════════════
+// PHASE CONTENT
+// ══════════════════════════════════════════
+const PC={
+  new:{e:2,terra:"La Luna Nuova segna un momento di reset cosmico. Le maree raggiungono la loro ampiezza minima. Nelle foreste, la linfa scende verso le radici — i falegnami tradizionali evitano di abbattere gli alberi in questo periodo.",ritmi:"Per il ciclo mestruale è associata storicamente al momento del flusso. L'energia è introversa, i livelli di estrogeni bassi. È un tempo di pulizia, non di produzione. Il corpo chiede riposo.",consiglio:"Questo è il momento per <em>seminare intenzioni</em>. Scrivi cosa vuoi portare nella tua vita nelle prossime quattro settimane. Non agire ancora — ascolta il silenzio."},
+  waxing_crescent:{e:4,terra:"La falce crescente porta una carica di potenziale. Le maree iniziano ad ampliarsi. Nelle tradizioni agricole, momento ideale per la semina — la linfa sale verso le foglie.",ritmi:"Il corpo femminile entra in una fase simile alla follicolare: l'energia sale, la chiarezza mentale aumenta. È il momento del dopo-mestruazione, dove le possibilità sembrano infinite.",consiglio:"Inizia ciò che hai seminato nella Luna Nuova. I <em>primi passi concreti</em> vanno fatti ora. Comunica, socializza, esplora."},
+  first_quarter:{e:6,terra:"Il Primo Quarto porta tensione gravitazionale. Le maree quadraturali creano correnti peculiari sulle coste. Nelle piante rampicanti, la crescita verticale accelera.",ritmi:"Equivale alla fase ovulatoria. L'energia è al massimo della sua espressione sociale. Il testosterone sale leggermente anche nelle donne, portando assertività.",consiglio:"Affronta gli ostacoli. Se c'è qualcosa che stai rimandando, <em>questo è il momento di agire</em>. La tua determinazione è al picco."},
+  waxing_gibbous:{e:7,terra:"La luna quasi piena illumina le notti con luce crescente, perturbando i cicli circadiani di molti animali notturni.",ritmi:"Pre-ovulazione ancora in corso, oppure transizione verso la fase luteale iniziale. L'energia è alta ma può iniziarsi a sentire una certa tensione.",consiglio:"Perfeziona, rifinisci, <em>porta a termine ciò che hai iniziato</em>. Non iniziare nuovi progetti — porta a maturità quelli in corso."},
+  full:{e:10,terra:"Le maree di sigizia raggiungono la loro ampiezza massima. La crosta terrestre si deforma di qualche centimetro. L'illuminazione notturna influenza il sonno di milioni di esseri viventi.",ritmi:"Il corrispettivo dell'ovulazione. L'energia emotiva è al massimo — tutto si amplifica: gioie, tensioni, intuizioni, conflitti. Le emozioni emerse vanno riconosciute.",consiglio:"<em>Celebra, ringrazia, rilascia.</em> Questa è la notte per riconoscere quanto sei cresciuta nell'ultimo mese. Lascia andare ciò che non ti serve."},
+  waning_gibbous:{e:7,terra:"Dopo il picco, la Terra inizia a respirare. L'intensità gravitazionale cala. Nelle foreste decidue, la linfa inizia lentamente la sua discesa.",ritmi:"Fase luteale nel ciclo femminile. Il progesterone domina. Può subentrare stanchezza, voglia di introversione, maggiore sensibilità emotiva.",consiglio:"Tempo di <em>gratitudine e integrazione</em>. Cosa hai imparato? Cosa hai realizzato? Inizia a rallentare e a nutrirti."},
+  last_quarter:{e:4,terra:"Il Quarto Calante porta di nuovo le maree quadraturali. La tradizione contadina lo considera il momento ideale per potare le piante e raccogliere radici.",ritmi:"Fase pre-mestruale nel ciclo. Estrogeni e progesterone scendono entrambi. La tolleranza alla frustrazione può essere bassa. L'intuizione è acutissima.",consiglio:"Ascolta i tuoi confini. Questo è il momento per dire di no e per <em>fare pulizia</em>: fisica, emotiva, relazionale."},
+  waning_crescent:{e:2,terra:"La falce calante è il momento più silenzioso del ciclo lunare. La luce è minima, le maree moderate, la natura si contrae.",ritmi:"La fase premestruale più profonda, o il flusso stesso. Il corpo richiede riposo totale. Il sistema nervoso è più sensibile agli stimoli.",consiglio:"Riposa senza colpa. Medita, sogna, lasciati andare. <em>Non pianificare, non decidere cose importanti ora</em>. Aspetta la Luna Nuova."}
+};
+
+// ══════════════════════════════════════════
+// ASTROLOGY CONTENT
+// ══════════════════════════════════════════
+const ASTRO_PHASE={
+  new:{title:'Luna Nuova & Astrologia',body:`La <em>Luna Nuova</em> in astrologia rappresenta l'inizio di un nuovo ciclo di 29,5 giorni. È il momento del seme: le intenzioni piantate ora germoglieranno nelle prossime settimane. Molti astrologi usano la Luna Nuova per lanciare rituali di manifestazione, scrivere desideri, iniziare nuovi progetti. Il segno in cui cade la Luna Nuova colora la qualità di questo nuovo inizio.`,mood:'Introversione, riflessione, pianificazione silenziosa',body2:`In senso archetipico, la Luna Nuova corrisponde alla <em>Fanciulla</em> — potenziale puro, curiosità vergine, pagina bianca. È il momento in cui l'inconscio parla più forte della ragione. I sogni di questi giorni sono spesso molto significativi.`},
+  waxing_crescent:{title:'Luna Crescente & Astrologia',body:`La <em>falce crescente</em> è il momento dell'intenzione che diventa azione. In astrologia è associata alla fiducia e al coraggio di iniziare, nonostante l'incertezza. La luna è visibile al tramonto, sottile e dorata — un segnale di speranza. È il momento di dichiarare cosa vuoi costruire.`,mood:'Ottimismo, slancio, voglia di cominciare',body2:`L'archetipo è quello del <em>Viandante</em> — colei che parte senza conoscere la destinazione, guidata dall'istinto. In questo periodo, le relazioni iniziate tendono ad avere una qualità fresca e non convenzionale.`},
+  first_quarter:{title:'Quarto Crescente & Astrologia',body:`Il <em>Quarto Crescente</em> porta con sé una crisi di azione: la luna forma un angolo di 90° con il Sole — in astrologia, un quadrato. I quadrati generano tensione creativa. Emergono ostacoli, ma anche la forza per superarli. È il momento in cui si decide davvero se si vuole ciò che si è detto di volere.`,mood:'Determinazione, sfida, energia guerriera',body2:`L'archetipo del <em>Guerriero/Guerriera</em>. Il confine tra assertività e aggressività è sottile. Questo è il periodo in cui si tende a scontrarsi — ma anche a ottenere breakthrough importanti. Usa questa tensione creativamente.`},
+  waxing_gibbous:{title:'Gibbosa Crescente & Astrologia',body:`La <em>luna gibbosa crescente</em> è la fase della perfezione e del perfezionismo. In astrologia, siamo nella preparazione al culmine. L'energia è alta ma ancora orientata verso un futuro che non si è ancora manifestato. È il momento giusto per analizzare, aggiustare, affinare.`,mood:'Perfezionismo, analisi, voglia di migliorare',body2:`L'archetipo del <em>Apprendista</em>. Questa luna tende ad amplificare l'autocritica — il rischio è che il perfezionismo blocchi il completamento. Pratica l'arte del "abbastanza buono per ora". La luna sta crescendo verso il suo culmine: fidati del processo.`},
+  full:{title:'Luna Piena & Astrologia',body:`La <em>Luna Piena</em> è il momento astrologico più potente e visibile del ciclo. Il Sole e la Luna si trovano in segni opposti del cielo — un'opposizione. In astrologia, le opposizioni portano a illuminazione attraverso la tensione tra due polarità. Ciò che era nascosto viene rivelato.`,mood:'Intensità emotiva, rivelazione, completamento',body2:`L'archetipo della <em>Grande Madre</em> o della <em>Sacerdotessa</em>. La luna piena amplifica tutto: sentimenti, intuizioni, sogni, conflitti. È tradizionalmente il momento dei rituali di rilascio — scrivere ciò che vuoi lasciare andare e bruciare la carta. Il segno della Luna Piena rivela in quale area della vita arriva la luce in questo ciclo.`},
+  waning_gibbous:{title:'Gibbosa Calante & Astrologia',body:`La <em>luna gibbosa calante</em> porta il dono della saggezza dopo il culmine. In astrologia è la fase della <em>disseminazione</em>: ciò che si è ricevuto al momento della luna piena va ora condiviso, insegnato, trasmesso. È il momento dei guru, degli insegnanti, di chi sa e vuole comunicare.`,mood:'Generosità, saggezza, voglia di condividere',body2:`L'archetipo della <em>Maga/Insegnante</em>. Questo è uno dei momenti migliori per insegnare, fare presentazioni, tenere corsi, scrivere, comunicare la propria visione. L'energia del Sole e della Luna sta per separarsi — usala per lasciare un'impronta.`},
+  last_quarter:{title:'Quarto Calante & Astrologia',body:`Il <em>Quarto Calante</em> forma ancora un quadrato tra Sole e Luna — ma questa volta la tensione è rivolta verso l'interno. In astrologia è la crisi della coscienza: bisogna reintegrare la lezione del ciclo prima che finisca. È il momento della resa dei conti con sé stesse.`,mood:'Resa dei conti, onestà, liberazione',body2:`L'archetipo della <em>Strega/Saggia</em> — colei che sa cosa tenere e cosa bruciare. Questo è il momento migliore per rituali di pulizia energetica, per liberarsi di oggetti non necessari, per avere conversazioni difficili ma necessarie. Il vecchio deve cedere il passo al nuovo.`},
+  waning_crescent:{title:'Luna Calante & Astrologia',body:`La <em>luna calante</em> è la fase del riposo e della resa. In astrologia, siamo nella fase <em>balsamica</em> — un momento di transizione tra la fine di un ciclo e l'inizio del successivo. Le persone nate durante questa fase lunare sono spesso visionarie, intuitive, in anticipo sui tempi.`,mood:'Resa, intuizione profonda, sogno lucido',body2:`L'archetipo della <em>Vecchia Saggia/Hag</em> nel senso sacro del termine — colei che conosce i misteri, che non ha paura della fine perché sa che dopo viene la rinascita. Questo è il momento più vicino all'inconscio. I sogni possono essere potenti rivelatori. Medita, digiuna leggermente, riposa.`}
+};
+
+const SIGN_MOON_MEANINGS={
+  'Ariete':{body:"La <em>Luna in Ariete</em> porta impulso, coraggio, impazienza. Le emozioni si esprimono direttamente — non c'è spazio per l'ambiguità. Momento potente per prendere decisioni rapide, per azioni audaci. L'irritabilità può essere alta, ma passa velocemente come un temporale estivo.",keyword:'Impulso · Coraggio · Azione immediata'},
+  'Toro':{body:"La <em>Luna in Toro</em> è una delle posizioni lunari più confortevoli. Le emozioni cercano stabilità, piacere fisico, bellezza. Ottimo momento per cucinare qualcosa di buono, fare un bagno, godersi la natura. Il corpo parla forte — ascoltalo.",keyword:'Stabilità · Piacere fisico · Presenza'},
+  'Gemelli':{body:"La <em>Luna in Gemelli</em> porta curiosità mentale, voglia di comunicare, leggerezza. Le emozioni sono fluide e cambianti. Ottimo momento per scrivere, leggere, fare telefonate importanti, imparare qualcosa di nuovo. Difficile stare fermi.",keyword:'Curiosità · Comunicazione · Leggerezza'},
+  'Cancro':{body:"La <em>Luna in Cancro</em> è la sua posizione naturale — domicilio lunare. Le emozioni sono profonde, la sensibilità alle stelle. Momento per la famiglia, per il nutrimento, per stare a casa. L'intuizione è eccezionale. Il confine tra sé e gli altri si assottiglia.",keyword:'Profondità emotiva · Casa · Intuizione'},
+  'Leone':{body:"La <em>Luna in Leone</em> porta calore, generosità, voglia di brillare. Le emozioni cercano espressione creativa e riconoscimento. Ottimo momento per l'arte, per celebrare, per stare al centro dell'attenzione. L'orgoglio può fare capolino.",keyword:'Creatività · Generosità · Espressione'},
+  'Vergine':{body:"La <em>Luna in Vergine</em> porta desiderio di ordine, purificazione, utilità. Le emozioni si esprimono attraverso il servizio e la cura dei dettagli. Ottimo momento per pulire casa, fare liste, prendersi cura della salute. Il perfezionismo può diventare ansia.",keyword:'Ordine · Cura · Purificazione'},
+  'Bilancia':{body:"La <em>Luna in Bilancia</em> porta voglia di armonia, bellezza, connessione. Le emozioni cercano equilibrio e giustizia. Ottimo momento per fare pace, per negoziare, per le relazioni. La difficoltà a decidere può farsi sentire.",keyword:'Armonia · Relazioni · Bellezza'},
+  'Scorpione':{body:"La <em>Luna in Scorpione</em> è intensa, trasformativa, profonda. Le emozioni toccano strati nascosti. Possono emergere gelosie, desideri potenti, intuizioni precise. Non è una luna leggera — ma è una luna che rivela verità importanti.",keyword:'Intensità · Trasformazione · Rivelazione'},
+  'Sagittario':{body:"La <em>Luna in Sagittario</em> porta ottimismo, voglia di libertà, sete di significato. Le emozioni cercano espansione, avventura, filosofia. Ottimo momento per viaggiare (anche mentalmente), per studiare qualcosa di nuovo, per ridere.",keyword:'Ottimismo · Libertà · Significato'},
+  'Capricorno':{body:"La <em>Luna in Capricorno</em> porta serietà, determinazione, controllo emotivo. Le emozioni vengono razionalizzate. Ottimo momento per lavorare a obiettivi a lungo termine, per essere pragmatiche. La freddezza emotiva può farsi sentire.",keyword:'Disciplina · Ambizione · Controllo'},
+  'Acquario':{body:"La <em>Luna in Acquario</em> porta distacco, originalità, umanità. Le emozioni si fanno universali — si pensa al mondo, alla collettività. Ottimo momento per amicizie, per idee rivoluzionarie, per rompere schemi.",keyword:'Originalità · Umanità · Distacco'},
+  'Pesci':{body:"La <em>Luna in Pesci</em> porta sensibilità estrema, empatia, sogno. I confini tra il sé e gli altri si sciolgono. Ottimo momento per la meditazione, l'arte, la musica. Il rischio è perdersi in fantasie o stati d'umore nebbiosi.",keyword:'Empatia · Sogno · Dissoluzione'}
+};
+
+const SIGN_SUN_MOON={
+  'Ariete':{luna:"Con il Sole in <em>Ariete</em>, la Luna Nuova porta energia di nuovo inizio potentissima. Ariete è il primo segno dello zodiaco — ogni lunazione è un ulteriore invito a guidare, ad osare, a essere pioniere. La Luna Piena in Ariete illumina il tuo bisogno di indipendenza.",waxing:"Le fasi crescenti ti chiedono di <em>agire senza aspettare</em>. Il tuo impulso naturale è di partire — la luna crescente lo amplifica ulteriormente.",waning:"Le fasi calanti ti chiedono qualcosa di inusuale: rallentare. Il tuo segno non ama aspettare, ma questo è il momento in cui le pause portano il massimo delle rivelazioni."},
+  'Toro':{luna:"Con il Sole in <em>Toro</em>, le fasi lunari ti chiedono di radicarti ancora più profondamente nella materia: corpo, casa, denaro, piacere. La Luna Nuova in Toro è una delle più potenti per manifestare stabilità materiale.",waxing:"Le fasi crescenti amplificano la tua naturale capacità di costruire lentamente e solidamente. Non affrettare: il tuo ritmo è perfetto.",waning:"Le fasi calanti ti chiedono di lasciare andare l'attaccamento — la lezione più difficile per il Toro. Cosa stai tenendo stretta oltre il suo tempo?"},
+  'Gemelli':{luna:"Con il Sole in <em>Gemelli</em>, le fasi lunari amplificano la tua naturale dualità. Le Luna Nuove sono momenti di semina di nuove idee, connessioni, storie. La Luna Piena in Gemelli illumina le tue molte voci interiori.",waxing:"Le fasi crescenti ti portano curiosità e voglia di esplorare in tutte le direzioni. Il rischio: disperdere le energie. Scegli una direzione alla volta.",waning:"Le fasi calanti ti invitano al silenzio — a fermare il flusso di parole e ascoltare cosa c'è sotto."},
+  'Cancro':{luna:"Con il Sole in <em>Cancro</em>, sei governata dalla Luna stessa. Ogni fase lunare ti tocca profondamente — hai un'affinità naturale con questi ritmi. Ascolta il tuo corpo durante i cambi di fase: è un barometro affidabile.",waxing:"Le fasi crescenti amplificano la tua cura per gli altri — ma ricorda di nutrire anche te stessa. La luna crescente in Cancro può portare voglia di costruire un nido.",waning:"Le fasi calanti ti invitano al ritiro. Onora il bisogno di solitudine — non è debolezza, è ricarica."},
+  'Leone':{luna:"Con il Sole in <em>Leone</em>, le fasi lunari ruotano attorno alla tua identità creativa. Le Luna Nuove sono momenti per iniziare nuovi progetti creativi. La Luna Piena in Leone porta un momento di massima visibilità — e di confronto con il tuo ego.",waxing:"Le fasi crescenti amplificano il tuo desiderio di brillare e di essere vista. Ottimo periodo per mettersi in mostra, presentare lavori, fare proposte.",waning:"Le fasi calanti ti chiedono di passare dalla performance alla presenza — di essere piuttosto che apparire."},
+  'Vergine':{luna:"Con il Sole in <em>Vergine</em>, le fasi lunari amplificano il tuo desiderio di miglioramento continuo. Le Luna Nuove sono momenti per stabilire nuove routine di salute. La Luna Piena in Vergine porta illuminazione attraverso l'analisi.",waxing:"Le fasi crescenti amplificano la tua capacità analitica — ottimo per finalizzare dettagli, fare revisioni, costruire sistemi.",waning:"Le fasi calanti ti invitano a <em>rilasciare il perfezionismo</em>. Abbastanza buono è spesso abbastanza."},
+  'Bilancia':{luna:"Con il Sole in <em>Bilancia</em>, le fasi lunari toccano profondamente le tue relazioni. Le Luna Nuove sono potenti per iniziare nuove connessioni o rinnovare quelle esistenti. La Luna Piena in Bilancia porta la necessità di trovare equilibrio.",waxing:"Le fasi crescenti amplificano il tuo senso estetico e diplomatico. Ottimo periodo per negoziare, collaborare, creare.",waning:"Le fasi calanti ti chiedono di rilasciare relazioni o dinamiche che non ti appartengono più — anche se ti dispiace."},
+  'Scorpione':{luna:"Con il Sole in <em>Scorpione</em>, le fasi lunari hanno una potenza trasformativa amplificata. Sei naturalmente sintonizzata con i cicli di morte e rinascita. Le Luna Nuove portano inizi che arrivano dopo fine — non aver paura.",waxing:"Le fasi crescenti portano desideri intensi a galla. Usali come bussola, non come urgenza.",waning:"Le fasi calanti sono il tuo territorio naturale — hai un dono per il rilascio, la trasformazione, la compostazione emotiva. Non sprecare questa energia."},
+  'Sagittario':{luna:"Con il Sole in <em>Sagittario</em>, le fasi lunari amplificano la tua ricerca di significato. Le Luna Nuove sono momenti per stabilire nuove visioni, pianificare viaggi (reali o interiori), iniziare studi.",waxing:"Le fasi crescenti alimentano la tua voglia di espansione — nuovi orizzonti, nuovi insegnanti, nuove filosofie.",waning:"Le fasi calanti ti chiedono di integrare ciò che hai imparato, prima di correre al prossimo capitolo."},
+  'Capricorno':{luna:"Con il Sole in <em>Capricorno</em>, le fasi lunari amplificano la tua relazione con il tempo, gli obiettivi e la struttura. Le Luna Nuove portano semi che crescono lentamente ma solidamente.",waxing:"Le fasi crescenti amplificano la tua capacità costruttiva — ottimo per fare passi pratici verso obiettivi a lungo termine.",waning:"Le fasi calanti ti chiedono di riposare e di ricordarti che non sei solo ciò che produci."},
+  'Acquario':{luna:"Con il Sole in <em>Acquario</em>, le fasi lunari amplificano la tua visione del futuro e il tuo senso di comunità. Le Luna Nuove sono momenti per immaginare soluzioni innovative.",waxing:"Le fasi crescenti portano voglia di connessione con la collettività — gruppo, amicizie, cause.",waning:"Le fasi calanti ti invitano all'intimità — un territorio meno familiare, ma prezioso."},
+  'Pesci':{luna:"Con il Sole in <em>Pesci</em>, le fasi lunari amplificano la tua straordinaria sensibilità. Sei naturalmente porosa ai cambi lunari — potresti avvertire ogni transizione nel corpo e nelle emozioni prima ancora di sapere cosa è cambiato.",waxing:"Le fasi crescenti amplificano la tua creatività e la tua empatia. Proteggi la tua energia.",waning:"Le fasi calanti sono il tuo territorio naturale — solitudine sacra, creatività, connessione con l'invisibile."}
+};
+
+function renderAstro(){
+  const now=new Date(),age=getLunarAge(now),phase=getPhase(age),moonSign=getMoonSign(age),sunSign=getSunSign(now);
+  const ap=ASTRO_PHASE[phase.key],ms=SIGN_MOON_MEANINGS[moonSign.sign],ss=SIGN_SUN_MOON[sunSign.sign];
+  const isWaxing=age<14.77,waxKey=isWaxing?'waxing':'waning';
+  const el=document.getElementById('astroContent');
+  el.innerHTML=`
+  <!-- Hero -->
+  <div class="astro-hero">
+    <div class="astro-sign-big">${phase.symbol}</div>
+    <div class="astro-sign-name">${ap.title}</div>
+    <div class="astro-sign-sub">Sole in ${sunSign.sign} ${sunSign.sym} · Luna in ${moonSign.sign} ${moonSign.sym}</div>
+    <div class="astro-desc">${ap.body}</div>
+  </div>
+
+  <!-- Grid cards -->
+  <div class="astro-grid">
+    <div class="astro-card">
+      <div class="astro-card-icon">${moonSign.sym}</div>
+      <div class="astro-card-title">Luna in ${moonSign.sign}</div>
+      <div class="astro-card-body"><em>${ms.keyword}</em><br><br>${ms.body}</div>
+    </div>
+    <div class="astro-card">
+      <div class="astro-card-icon">${sunSign.sym}</div>
+      <div class="astro-card-title">Sole in ${sunSign.sign}</div>
+      <div class="astro-card-body"><strong style="color:var(--amber);font-style:normal">Elemento:</strong> ${sunSign.el}<br><strong style="color:var(--amber);font-style:normal">Reggente:</strong> ${sunSign.ruler}<br><strong style="color:var(--amber);font-style:normal">Qualità:</strong> ${sunSign.qual}<br><br>${ss[waxKey]}</div>
+    </div>
+    <div class="astro-card">
+      <div class="astro-card-icon">🌀</div>
+      <div class="astro-card-title">Archetipo della fase</div>
+      <div class="astro-card-body">${ap.body2}</div>
+    </div>
+    <div class="astro-card">
+      <div class="astro-card-icon">💫</div>
+      <div class="astro-card-title">Qualità del momento</div>
+      <div class="astro-card-body"><em>${ap.mood}</em><br><br>Favorevole per: ${phase.key==='new'?'rituali di manifestazione, meditazione, scrittura di intenzioni':phase.key==='full'?'rituali di rilascio, celebrazione, conversazioni importanti':age<14.77?'iniziative, comunicazioni, avanzamento nei progetti':'integrazione, pulizie energetiche, riposo, autoanalisi'}</div>
+    </div>
+  </div>
+
+  <!-- Phase wheel -->
+  <div class="astro-phase-wheel">
+    <div class="apw-title">✦ Tutte le fasi — significati astrologici</div>
+    <div class="apw-list">
+      ${[
+        {k:'new',s:'🌑',n:'Luna Nuova',d:'Semina di intenzioni · Nuovi inizi · Interiorità'},
+        {k:'waxing_crescent',s:'🌒',n:'Luna Crescente',d:'Primo passo · Fiducia · Dichiarazione'},
+        {k:'first_quarter',s:'🌓',n:'Quarto Crescente',d:'Crisi di azione · Tensione creativa · Scelta'},
+        {k:'waxing_gibbous',s:'🌔',n:'Gibbosa Crescente',d:'Perfezionamento · Analisi · Preparazione'},
+        {k:'full',s:'🌕',n:'Luna Piena',d:'Culmine · Rivelazione · Rilascio'},
+        {k:'waning_gibbous',s:'🌖',n:'Gibbosa Calante',d:'Disseminazione · Insegnamento · Condivisione'},
+        {k:'last_quarter',s:'🌗',n:'Quarto Calante',d:'Resa dei conti · Trasformazione · Onestà'},
+        {k:'waning_crescent',s:'🌘',n:'Luna Calante',d:'Resa · Visione · Preparazione al nuovo ciclo'},
+      ].map(p=>`<div class="apw-item ${p.k===phase.key?'current':''}">
+        <div class="apw-sym">${p.s}</div>
+        <div class="apw-info">
+          <div class="apw-name ${p.k===phase.key?'current-label':''}">${p.n}</div>
+          <div class="apw-body">${p.d}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════
+// RENDER LUNA PAGE
+// ══════════════════════════════════════════
+function renderLuna(){
+  const now=new Date(),age=getLunarAge(now),illum=getIllum(age),phase=getPhase(age),c=PC[phase.key],s=29.53058867,np=getNextPhases(age,now);
+  drawMoon(age);
+  document.getElementById('phaseName').textContent=phase.name+' '+phase.symbol;
+  document.getElementById('phaseDate').textContent=now.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  document.getElementById('illumination').textContent=illum+'%';
+  document.getElementById('daysInCycle').textContent=(Math.floor(age)+1)+'/29';
+  document.getElementById('daysToNext').textContent='tra '+np[0].days.toFixed(1)+'gg';
+  document.getElementById('cycleFill').style.width=((age/s)*100)+'%';
+  document.getElementById('nextPhases').innerHTML=np.map(p=>`<div class="next-phase"><div class="np-symbol">${p.symbol}</div><div class="np-name">${p.name.split(' ').slice(-1)[0]}</div><div class="np-date">${p.date}</div></div>`).join('');
+  const dots=n=>Array.from({length:10},(_,i)=>`<div class="edot ${i<n?'on':''}"></div>`).join('');
+  const secs=[
+    {icon:'🌍',title:'Effetti sulla Terra',body:`<p>${c.terra}</p>`},
+    {icon:'🌊',title:'Maree & Natura',body:`<p>Le maree riflettono fedelmente il ciclo lunare. In questo momento di <em>${phase.name.toLowerCase()}</em>, ${age<7.38||(age>22&&age<29.5)?'siamo in fase di maree <em>di quadratura</em> — più contenute. Le coste sono più tranquille.':'siamo in fase di maree <em>di sigizia</em> — le più intense del mese. Le correnti oceaniche si amplificano.'}</p><p>Nelle tradizioni dei pescatori mediterranei, le fasi lunari guidavano quando uscire in mare e quando aspettarsi abbondanza.</p>`},
+    {icon:'🩸',title:'Ciclo Mestruale & Ritmi',body:`<p>${c.ritmi}</p><p>Molte culture associavano la luna nuova alla <em>mestruazione</em> e la luna piena all'<em>ovulazione</em>. Il sincronismo non è universale — ma l'influenza lunare sui ritmi biologici è documentata attraverso la melatonina e i cicli di cortisolo.</p>`},
+    {icon:'⚡',title:'Energia & Emozioni',body:`<p>Ogni fase lunare porta una qualità energetica distinta — come il respiro ha un'inspirazione e un'espirazione.</p><div class="energy-meter"><span class="energy-label">Energia</span><div class="energy-dots">${dots(c.e)}</div></div><p style="margin-top:12px">Durante la <em>${phase.name.toLowerCase()}</em>, l'energia invita a: ${c.e>=7?'espandersi, connettersi, creare, esprimere.':c.e>=4?'costruire gradualmente, avanzare con intenzione.':'ritirarsi, ascoltare, riposare, integrare.'}</p>`},
+    {icon:'✨',title:'Consiglio Lunare',body:`<p>${c.consiglio}</p>`},
+  ];
+  const el=document.getElementById('sections');
+  el.innerHTML=secs.map(s=>`<div class="section-card"><div class="section-header"><div class="section-icon">${s.icon}</div><div class="section-title">${s.title}</div><div class="section-chevron">▾</div></div><div class="section-body"><div class="section-content">${s.body}</div></div></div>`).join('');
+  el.querySelectorAll('.section-card').forEach(card=>card.addEventListener('click',()=>card.classList.toggle('open')));
+  setTimeout(()=>el.querySelector('.section-card')?.classList.add('open'),500);
+}
+
+// ══════════════════════════════════════════
+// DIARIO
+// ══════════════════════════════════════════
+const SK='luna_diary_v1';
+function load(){try{return JSON.parse(localStorage.getItem(SK)||'[]');}catch{return[];}}
+function save(entries){localStorage.setItem(SK,JSON.stringify(entries));}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2400);}
+
+let selMoods=[],selSyms=[];
+document.querySelectorAll('.mood-pill').forEach(p=>p.addEventListener('click',()=>{const m=p.dataset.mood;if(selMoods.includes(m)){selMoods=selMoods.filter(x=>x!==m);p.classList.remove('selected');}else{selMoods.push(m);p.classList.add('selected');}}));
+document.querySelectorAll('.sym-pill').forEach(p=>p.addEventListener('click',()=>{const s=p.dataset.sym;if(selSyms.includes(s)){selSyms=selSyms.filter(x=>x!==s);p.classList.remove('selected');}else{selSyms.push(s);p.classList.add('selected');}}));
+document.getElementById('energySlider').addEventListener('input',function(){document.getElementById('energyDisplay').textContent=this.value;});
+document.getElementById('saveBtn').addEventListener('click',()=>{
+  const now=new Date(),age=getLunarAge(now),phase=getPhase(age);
+  const note=document.getElementById('diaryNote').value.trim();
+  const energy=parseInt(document.getElementById('energySlider').value);
+  if(!selMoods.length&&!note){toast('✦ Aggiungi almeno un umore o una nota');return;}
+  const entry={id:Date.now(),date:now.toISOString(),dateFormatted:now.toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long',year:'numeric'}),phase:phase.name,phaseKey:phase.key,symbol:phase.symbol,lunarAge:age.toFixed(1),illumination:getIllum(age),moods:[...selMoods],symptoms:[...selSyms],energy,note};
+  const entries=load();entries.unshift(entry);save(entries);
+  selMoods=[];selSyms=[];
+  document.querySelectorAll('.mood-pill,.sym-pill').forEach(p=>p.classList.remove('selected'));
+  document.getElementById('diaryNote').value='';
+  document.getElementById('energySlider').value=5;document.getElementById('energyDisplay').textContent='5';
+  toast('✦ Voce salvata nel tuo diario lunare');renderDiary();
+  schedulePhaseChangeNotification();
+});
+
+function renderDiary(){
+  const entries=load(),listEl=document.getElementById('entriesList'),emptyEl=document.getElementById('emptyDiary'),titleEl=document.getElementById('entriesTitle'),patSec=document.getElementById('patternSection');
+  if(!entries.length){listEl.innerHTML='';emptyEl.style.display='block';titleEl.style.display='none';patSec.style.display='none';return;}
+  emptyEl.style.display='none';titleEl.style.display='block';patSec.style.display='block';
+  const pg={};entries.forEach(e=>{if(!pg[e.phaseKey])pg[e.phaseKey]={sum:0,count:0,symbol:e.symbol};pg[e.phaseKey].sum+=e.energy;pg[e.phaseKey].count++;});
+  const po=['new','waxing_crescent','first_quarter','waxing_gibbous','full','waning_gibbous','last_quarter','waning_crescent'];
+  const pn={new:'Nuova',waxing_crescent:'Crescente',first_quarter:'Quarto+',waxing_gibbous:'Gibbosa+',full:'Piena',waning_gibbous:'Gibbosa−',last_quarter:'Quarto−',waning_crescent:'Calante'};
+  document.getElementById('patternPhases').innerHTML=po.filter(k=>pg[k]).map(k=>{const g=pg[k],avg=(g.sum/g.count).toFixed(1);return`<div class="pp"><div class="pp-sym">${g.symbol}</div><div class="pp-avg">⚡${avg}</div><div class="pp-lbl">${pn[k]}</div></div>`;}).join('');
+  listEl.innerHTML=entries.map(e=>{
+    const mT=e.moods.map(m=>`<span class="entry-mood-tag">${m}</span>`).join('');
+    const sT=e.symptoms.map(s=>`<span class="entry-sym-tag">${s}</span>`).join('');
+    const dots=Array.from({length:10},(_,i)=>`<div class="entry-edot ${i<e.energy?'on':''}"></div>`).join('');
+    return`<div class="entry-card"><div class="entry-top"><div class="entry-left"><div class="entry-moon">${e.symbol}</div><div><div class="entry-date-line">${e.dateFormatted}</div><div class="entry-phase-line">${e.phase} · ${e.illumination}% illuminata</div></div></div><button class="entry-delete" data-id="${e.id}">✕</button></div>${mT||sT?`<div class="entry-mood-row">${mT}${sT}</div>`:''}<div class="entry-energy-row">${dots}</div>${e.note?`<div class="entry-text">"${e.note}"</div>`:''}</div>`;
+  }).join('');
+  listEl.querySelectorAll('.entry-delete').forEach(btn=>btn.addEventListener('click',ev=>{ev.stopPropagation();save(load().filter(e=>e.id!==parseInt(btn.dataset.id)));toast('Voce eliminata');renderDiary();}));
+}
+
+// ══════════════════════════════════════════
+// NOTIFICHE
+// ══════════════════════════════════════════
+let swReg=null;
+
+async function initSW(){
+  if('serviceWorker' in navigator){
+    try{swReg=await navigator.serviceWorker.register('./sw.js');console.log('SW registered');}
+    catch(e){console.warn('SW error',e);}
+  }
+}
+
+function updateNotifUI(){
+  const icon=document.getElementById('notifStatusIcon');
+  const text=document.getElementById('notifStatusText');
+  const sub=document.getElementById('notifStatusSub');
+  const btn=document.getElementById('notifEnableBtn');
+  if(!('Notification' in window)){
+    icon.textContent='⚠️';text.textContent='Non supportate';sub.textContent='Il tuo browser non supporta le notifiche';btn.disabled=true;btn.textContent='Non disponibile';return;
+  }
+  const p=Notification.permission;
+  if(p==='granted'){icon.textContent='🔔';text.textContent='Notifiche attivate ✓';sub.textContent='Riceverai promemoria lunari';btn.textContent='✦ Notifiche già attivate';btn.disabled=true;}
+  else if(p==='denied'){icon.textContent='🔕';text.textContent='Notifiche bloccate';sub.textContent='Vai alle impostazioni del browser per sbloccarle';btn.disabled=true;btn.textContent='Bloccate dal browser';}
+  else{icon.textContent='🔕';text.textContent='Notifiche non attivate';sub.textContent='Attivale per ricevere promemoria lunari';btn.disabled=false;btn.textContent='✦ Attiva le notifiche lunari';}
+}
+
+document.getElementById('notifEnableBtn').addEventListener('click',async()=>{
+  if(!('Notification' in window)){toast('⚠️ Browser non supportato');return;}
+  const result=await Notification.requestPermission();
+  updateNotifUI();
+  if(result==='granted'){toast('🔔 Notifiche lunari attivate!');schedulePhaseChangeNotification();}
+  else{toast('Permesso non concesso');}
+});
+
+document.getElementById('testNotifBtn').addEventListener('click',async()=>{
+  if(Notification.permission!=='granted'){toast('Prima attiva le notifiche ↑');return;}
+  const now=new Date(),age=getLunarAge(now),phase=getPhase(age);
+  try{
+    if(swReg){
+      await swReg.showNotification('☽ Luna — Notifica di prova',{body:`Oggi: ${phase.name} ${phase.symbol} · ${getIllum(age)}% illuminata`,icon:'./icon.png',tag:'luna-test',vibrate:[200,100,200]});
+    } else {
+      new Notification('☽ Luna — Notifica di prova',{body:`Oggi: ${phase.name} ${phase.symbol} · ${getIllum(age)}% illuminata`});
+    }
+    toast('✓ Notifica inviata!');
+  }catch(e){toast('Errore: '+e.message);}
+});
+
+function schedulePhaseChangeNotification(){
+  if(Notification.permission!=='granted')return;
+  if(!document.getElementById('tog-phase').checked)return;
+  const now=new Date(),age=getLunarAge(now),np=getNextPhases(age,now);
+  const next=np[0];
+  const msDelay=next.days*24*3600*1000;
+  const fireTime=new Date(now.getTime()+msDelay);
+  localStorage.setItem('luna_next_notif',JSON.stringify({phase:next.name,symbol:next.symbol,fireAt:fireTime.toISOString()}));
+  if(swReg){
+    swReg.active?.postMessage({type:'SCHEDULE_NOTIFICATION',title:`☽ Luna — ${next.symbol} ${next.name}`,body:`La luna entra in ${next.name} il ${next.date}. Apri Luna per il tuo consiglio lunare.`,delay:msDelay});
+  }
+}
+
+function checkScheduledNotifications(){
+  if(Notification.permission!=='granted')return;
+  const saved=localStorage.getItem('luna_next_notif');
+  if(!saved)return;
+  try{
+    const data=JSON.parse(saved);
+    const fireAt=new Date(data.fireAt);
+    const now=new Date();
+    if(now>=fireAt){
+      const age=getLunarAge(now),phase=getPhase(age);
+      if(swReg){swReg.showNotification(`☽ ${data.symbol} ${data.phase}`,{body:`La luna è entrata in ${data.phase}. Apri Luna per scoprire cosa significa per te oggi.`,tag:'luna-phase',vibrate:[200,100,200]});}
+      localStorage.removeItem('luna_next_notif');
+      schedulePhaseChangeNotification();
+    }
+  }catch(e){}
+}
+
+function scheduleDailyNotification(){
+  if(!document.getElementById('tog-daily').checked)return;
+  if(Notification.permission!=='granted')return;
+  const timeVal=document.getElementById('notifTime').value||'08:00';
+  const [h,m]=timeVal.split(':').map(Number);
+  const now=new Date();
+  const fire=new Date();fire.setHours(h,m,0,0);
+  if(fire<=now)fire.setDate(fire.getDate()+1);
+  const delay=fire-now;
+  if(swReg){
+    const age=getLunarAge(now),phase=getPhase(age);
+    swReg.active?.postMessage({type:'SCHEDULE_NOTIFICATION',title:`☽ Buongiorno — ${phase.symbol} ${phase.name}`,body:`Illuminazione: ${getIllum(age)}%. Apri Luna per il consiglio del giorno.`,delay});
+  }
+}
+
+document.getElementById('tog-daily').addEventListener('change',scheduleDailyNotification);
+document.getElementById('notifTime').addEventListener('change',()=>{if(document.getElementById('tog-daily').checked)scheduleDailyNotification();});
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+async function init(){
+  renderLuna();
+  renderAstro();
+  renderDiary();
+  await initSW();
+  updateNotifUI();
+  checkScheduledNotifications();
+  setInterval(checkScheduledNotifications,60000);
+}
+init();
+</script>
+</body>
+</html>
